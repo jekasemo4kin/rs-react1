@@ -1,11 +1,15 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { BuggyButton } from './BuggyButton';
 
 interface Props {
   children: ReactNode;
+  resetCondition: unknown;
+  onErrorTrigger: (status: boolean) => void;
 }
 
 interface State {
   hasError: boolean;
+  
 }
 
 export class ErrorBoundary extends Component<Props, State> {
@@ -18,20 +22,33 @@ export class ErrorBoundary extends Component<Props, State> {
     return { hasError: true };
   }
 
+  componentDidUpdate(prevProps: Props) {
+    if (this.state.hasError && prevProps.resetCondition !== this.props.resetCondition) {
+      this.setState({ hasError: false });
+      this.props.onErrorTrigger(false);
+    }
+  }
+
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("Uncaught error:", error, errorInfo);
+    console.error("ErrorBoundary caught an error:", error, errorInfo);
+    this.props.onErrorTrigger(true);
   }
 
   render() {
-    if (this.state.hasError) {
-      return (
-        <div className="error-fallback">
-          <h2>Oops! Something went wrong.</h2>
-          <button onClick={() => window.location.reload()}>Reload Page</button>
-        </div>
-      );
+    return (
+        <>
+            {this.state.hasError ? (
+            <div className="flex flex-col items-center justify-center h-64 text-center px-4">
+            <div className="bg-red-50 p-6 rounded-2xl border border-red-100">
+                <p className="text-red-600 text-lg font-semibold mb-2">Oops! Something went wrong</p>
+                <p className="text-red-400 text-sm">Попробуйте снова нажать Search или изменить запрос</p>
+            </div>
+            </div>
+            ) : (
+            this.props.children
+            )}
+        <BuggyButton />
+        </>
+    );
     }
-
-    return this.props.children;
-  }
 }
