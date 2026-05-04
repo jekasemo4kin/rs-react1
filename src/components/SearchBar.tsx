@@ -22,9 +22,14 @@ export class SearchBar extends Component<Props, State> {
 
   handleSearch = () => {
     const { searchTerm } = this.state;
-
-    localStorage.setItem('search_term', searchTerm.trim());
-    this.props.onSearch(searchTerm.trim());
+    const trimmedTerm = searchTerm.trim();
+    const lastTerm = localStorage.getItem('search_term') || '';
+    if (trimmedTerm === lastTerm) {
+      console.log('Запрос дублируется, действие отменено');
+      return;
+    }
+    localStorage.setItem('search_term', trimmedTerm);
+    this.props.onSearch(trimmedTerm);
   };
 
   render() {
