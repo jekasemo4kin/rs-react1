@@ -24,9 +24,9 @@ export class SearchBar extends Component<Props, State> {
   handleSearch = () => {
     const { searchTerm } = this.state;
     const trimmedTerm = searchTerm.trim();
+    this.setState({ searchTerm: trimmedTerm });
     const lastTerm = localStorage.getItem('search_term') || '';
     if (trimmedTerm === lastTerm && !this.props.hasError) {
-      console.log('Запрос дублируется, действие отменено');
       return;
     }
     localStorage.setItem('search_term', trimmedTerm);

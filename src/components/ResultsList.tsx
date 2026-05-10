@@ -10,10 +10,17 @@ export class ResultsList extends Component<Props> {
   render() {
     const { pokemons, isLoading } = this.props;
 
-    if (isLoading) return (
-        <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600">Загрузка данных...</div>
-        </div>)
+    if (isLoading) {
+      return (
+        <div className="flex flex-col justify-center items-center h-64 gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-slate-200 border-b-blue-600"></div>
+          
+          <p className="text-slate-500 font-medium animate-pulse">
+            Searching for Pokémon...
+          </p>
+        </div>
+      );
+    }
 
     if (pokemons.length === 0) {
       return (
@@ -27,7 +34,7 @@ export class ResultsList extends Component<Props> {
         <thead>
           <tr className="bg-slate-50 border-b border-slate-100">
             <th className="px-8 py-4 font-semibold  text-red-600">Name</th>
-            <th className="px-8 py-4 font-semibold  text-right text-red-600">Image</th>
+            <th className="px-8 py-4 font-semibold  text-right text-red-600">Description</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-50">

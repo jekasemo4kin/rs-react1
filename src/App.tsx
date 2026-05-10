@@ -35,32 +35,32 @@ class App extends Component<object, State> {
   };
 
   render() {
-    return (
-      
-        <div className="min-h-screen bg-slate-50 py-10 px-4">
-          <div className="max-w-4xl mx-auto">
+  return (
+    <div className="min-h-screen bg-slate-50 py-10 px-4">
+      <div className="max-w-4xl mx-auto">
+
+        <ErrorBoundary 
+          resetCondition={this.state.pokemons}
+          onErrorTrigger={this.handleErrorState}
+        >
           <header className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 mb-8 text-center">
             <h1 className="text-3xl font-extrabold text-slate-800 mb-6">PokeAPI Explorer</h1>
-            <SearchBar onSearch={this.handleSearch} hasError={this.state.isError}></SearchBar>
+            <SearchBar onSearch={this.handleSearch} hasError={this.state.isError} />
           </header>
           
           <main className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative min-h-100">
-            <ErrorBoundary 
-              resetCondition={this.state.pokemons}
-              onErrorTrigger={this.handleErrorState}
-            >
-              <ResultsList 
-                pokemons={this.state.pokemons} 
-                isLoading={this.state.isLoading} 
-              />
-              <BuggyButton />
-            </ErrorBoundary>
+            <ResultsList 
+              pokemons={this.state.pokemons} 
+              isLoading={this.state.isLoading} 
+            />
           </main>
-          </div>
-        </div>
-      
-    );
-  }
+
+          <BuggyButton />
+        </ErrorBoundary>
+      </div>
+    </div>
+  );
+}
 }
 
 export default App;

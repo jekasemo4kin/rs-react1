@@ -39,7 +39,6 @@ export class PokemonApi {
         imageUrl: data.sprites.front_default
       }];
     } catch (error) {
-      console.error("API Error:", error);
       return [];
     }
   }
