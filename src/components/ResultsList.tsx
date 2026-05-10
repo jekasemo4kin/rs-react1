@@ -4,6 +4,7 @@ import type { Pokemon } from '../services/api';
 interface Props {
   pokemons: Pokemon[];
   isLoading: boolean;
+  isError: boolean;
 }
 
 export class ResultsList extends Component<Props> {
@@ -22,11 +23,12 @@ export class ResultsList extends Component<Props> {
       );
     }
 
-    if (pokemons.length === 0) {
+    if (this.props.isError) {
       return (
         <div className="flex flex-col items-center justify-center h-64 text-center px-4">
-            <p className="text-slate-400 text-lg font-medium">Nothing found matching your request.</p>
-        </div>)
+          <p className="text-slate-400 text-lg font-medium">Nothing found matching your request.</p>
+      </div>
+      );
     }
 
     return (

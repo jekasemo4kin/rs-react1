@@ -29,10 +29,20 @@ class App extends Component<object, State> {
   };
 
   handleSearch = async (term: string) => {
-    this.setState({ isLoading: true, isError: false });
+  this.setState({ isLoading: true, isError: false, pokemons: [] });
+  
+  try {
     const results = await PokemonApi.searchPokemons(term);
-    this.setState({ pokemons: results, isLoading: false });
-  };
+    this.setState({ pokemons: results, isLoading: false, isError: false });
+  } catch (e) {
+    console.log(e);
+    this.setState({ 
+      isLoading: false, 
+      isError: true,
+      pokemons: [] 
+    });
+  }
+};
 
   render() {
   return (
@@ -52,6 +62,7 @@ class App extends Component<object, State> {
             <ResultsList 
               pokemons={this.state.pokemons} 
               isLoading={this.state.isLoading} 
+              isError={this.state.isError}
             />
           </main>
 
