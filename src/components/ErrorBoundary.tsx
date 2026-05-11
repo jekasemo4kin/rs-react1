@@ -35,7 +35,7 @@ export class ErrorBoundary extends Component<Props, State> {
   render() {
   if (this.state.hasError) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] text-center px-4 bg-white rounded-2xl shadow-sm border border-red-100">
+      <div className="flex flex-col items-center justify-center min-h-400px text-center px-4 bg-white rounded-2xl shadow-sm border border-red-100">
         <div className="bg-red-50 p-8 rounded-3xl max-w-md">
           <div className="text-red-500 mb-4 flex justify-center">
              <svg className="w-16 h-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">

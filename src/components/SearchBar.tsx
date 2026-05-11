@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import  { Component } from 'react';
 
 interface Props {
   onSearch: (term: string) => void;
@@ -16,10 +16,6 @@ export class SearchBar extends Component<Props, State> {
     const savedTerm = localStorage.getItem('search_term') || '';
     this.state = { searchTerm: savedTerm };
   }
-
-  handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    this.setState({ searchTerm: event.target.value });
-  };
 
   handleSearch = () => {
     const { searchTerm } = this.state;
