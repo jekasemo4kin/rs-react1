@@ -24,7 +24,6 @@ export class ErrorBoundary extends Component<Props, State> {
   componentDidUpdate(prevProps: Props) {
     if (this.state.hasError && prevProps.resetCondition !== this.props.resetCondition) {
       this.setState({ hasError: false });
-      this.props.onErrorTrigger(false);
     }
   }
 
@@ -47,8 +46,11 @@ export class ErrorBoundary extends Component<Props, State> {
             The application encountered a critical error. Click the button below to resume operation.
           </p>
           <button 
-            onClick={() => window.location.reload()}
-            className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-red-200 active:scale-95"
+            onClick={() => {
+              this.setState({ hasError: false });
+              this.props.onErrorTrigger(false);
+            }}
+          className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-red-200 active:scale-95"
           >
             Reload Application
           </button>
