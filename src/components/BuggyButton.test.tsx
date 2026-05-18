@@ -1,28 +1,34 @@
-// import { render, screen, fireEvent } from '@testing-library/react';
-// import { it, expect, vi } from 'vitest';
-// import { BuggyButton } from './BuggyButton';
-// import { ErrorBoundary } from './ErrorBoundary';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { it, expect, vi } from 'vitest';
+import { BuggyButton } from './BuggyButton';
+import { ErrorBoundary } from './ErrorBoundary';
 
-// it('восстанавливает приложение при клике на кнопку перезагрузки в ErrorBoundary', () => {
-//   const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+it('восстанавливает приложение при клике на кнопку перезагрузки в ErrorBoundary', () => {
+  // Глушим ошибку в консоли, которую выплевывает React в режиме разработки
+  const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-//   const reloadSpy = vi.fn();
-//   Object.defineProperty(window, 'location', {
-//     value: { reload: reloadSpy },
-//     writable: true,
-//   });
+  render(
+    <ErrorBoundary resetCondition={false} onErrorTrigger={vi.fn()}>
+      <BuggyButton />
+    </ErrorBoundary>
+  );
 
-//   render(
-//     <ErrorBoundary resetCondition={null} onErrorTrigger={vi.fn()}>
-//       <BuggyButton />
-//     </ErrorBoundary>
-//   );
+  // 1. Проверяем, что изначально кнопка на экране
+  const triggerBtn = screen.getByText(/Trigger Error/i);
+  expect(triggerBtn).toBeInTheDocument();
 
-//   fireEvent.click(screen.getByText(/Trigger Error/i));
+  // 2. Ломаем приложение
+  fireEvent.click(triggerBtn);
 
-//   const reloadBtn = screen.getByRole('button', { name: /Reload Application/i });
-//   fireEvent.click(reloadBtn);
+  // 3. Убеждаемся, что сработал Fallback UI и появилась кнопка перезагрузки
+  const reloadBtn = screen.getByRole('button', { name: /Reload Application/i });
+  expect(reloadBtn).toBeInTheDocument();
 
-//   expect(reloadSpy).toHaveBeenCalled();
-//   consoleSpy.mockRestore();
-// });
+  // 4. Кликаем по кнопке восстановления стейта
+  fireEvent.click(reloadBtn);
+
+  // 5. Приложение должно ожить, и кнопка слома снова должна быть в DOM
+  expect(screen.getByText(/Trigger Error/i)).toBeInTheDocument();
+
+  consoleSpy.mockRestore();
+});

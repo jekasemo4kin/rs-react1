@@ -1,98 +1,135 @@
-// import { render, screen, waitFor, fireEvent } from '@testing-library/react';
-// import { describe, it, expect, beforeEach, vi } from 'vitest';
-// import { server } from './__tests__/mocks/server';
-// import { http, HttpResponse } from 'msw';
-// import App from './App';
-// import { PokemonApi } from './services/api';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
+import App from './App';
 
-// describe('App Integration', () => {
-//   beforeEach(() => {
-//     localStorage.clear();
-//     server.resetHandlers();
-//     vi.clearAllMocks();
-//   });
+describe('App Integration with Routing', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.clearAllMocks();
+  });
 
-//   it('загружает данные из localStorage при монтировании и делает запрос', async () => {
-//     localStorage.setItem('search_term', 'pikachu');
-//     render(<App />);
-//     await waitFor(() => {
-//         expect(screen.getByText(/pikachu/i)).toBeInTheDocument();
-//     });
-//   });
+  it('автоматически перенаправляет на страницу /search/all/page/1', async () => {
+    const fakeCache = [
+      { name: 'bulbasaur', url: 'https://pokeapi.co/api/v2/pokemon/1/' },
+      { name: 'pikachu', url: 'https://pokeapi.co/api/v2/pokemon/25/' }
+    ];
+    localStorage.setItem('all_pokemon_names', JSON.stringify(fakeCache));
 
-//   it('отображает загрузку, а затем список покемонов', async () => {
-//     render(<App />);
-//     expect(screen.getByText(/Searching for Pokémon.../i)).toBeInTheDocument();
-//     await waitFor(() => {
-//       expect(screen.getByText(/bulbasaur/i)).toBeInTheDocument();
-//     });
-//   });
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <App />
+      </MemoryRouter>
+    );
 
-//   it('отображает сообщение "Nothing found", если покемон не найден (404)', async () => {
-//     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-//     render(<App />);
-    
-//     await waitFor(() => {
-//       expect(screen.getByText(/bulbasaur/i)).toBeInTheDocument();
-//     });
+    const row = await screen.findByText(/bulbasaur/i);
+    expect(row).toBeInTheDocument();
+  });
 
-//     const input = screen.getByPlaceholderText(/Например: pikachu.../i);
-//     const button = screen.getByRole('button', { name: /search/i });
+  it('открывает Аутлет с деталями покемона при клике на элемент списка', async () => {
+    const fakeCache = [{ name: 'bulbasaur', url: 'https://pokeapi.co/api/v2/pokemon/1/' }];
+    localStorage.setItem('all_pokemon_names', JSON.stringify(fakeCache));
 
-//     fireEvent.change(input, { target: { value: 'not-found-pokemon' } });
-//     fireEvent.click(button);
+    render(
+      <MemoryRouter initialEntries={['/search/all/page/1']}>
+        <App />
+      </MemoryRouter>
+    );
 
-//     await waitFor(() => {
-//       expect(screen.getByText(/Nothing found matching your request/i)).toBeInTheDocument();
-//     });
-//     expect(screen.queryByText(/bulbasaur/i)).not.toBeInTheDocument();
-//     logSpy.mockRestore();
-//   });
+    const row = await screen.findByText(/bulbasaur/i);
+    fireEvent.click(row);
 
-//   it('обрабатывает критическую ошибку сети (Network Error)', async () => {
-//     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await waitFor(() => {
+      expect(screen.getByText(/Height/i)).toBeInTheDocument();
+      expect(screen.getByText(/Weight/i)).toBeInTheDocument();
+    });
+  });
 
-//     server.use(
-//       http.get('https://pokeapi.co/api/v2/pokemon*', () => {
-//         return HttpResponse.error();
-//       })
-//     );
-//     render(<App />);
-//     await waitFor(() => {
-//       expect(screen.getByText(/Nothing found matching your request./i)).toBeInTheDocument();
-//     });
+  it('закрывает Аутлет при клике на крестик', async () => {
+    const fakeCache = [{ name: 'bulbasaur', url: 'https://pokeapi.co/api/v2/pokemon/1/' }];
+    localStorage.setItem('all_pokemon_names', JSON.stringify(fakeCache));
 
-//     logSpy.mockRestore();
-//   });
+    render(
+      <MemoryRouter initialEntries={['/search/all/page/1/pokemon/1']}>
+        <App />
+      </MemoryRouter>
+    );
 
-//   it('не вызывает повторный поиск при клике с тем же значением', async () => {
-//     const apiSpy = vi.spyOn(PokemonApi, 'searchPokemons');
-    
-//     render(<App />);
-    
-//     await waitFor(() => {
-//       expect(screen.getByText(/bulbasaur/i)).toBeInTheDocument();
-//     });
+    const closeBtn = await screen.findByRole('button', { name: /close details/i });
+    fireEvent.click(closeBtn);
 
-//     expect(apiSpy).toHaveBeenCalledTimes(1);
-//     const button = screen.getByRole('button', { name: /search/i });
-    
-//     fireEvent.click(button);
+    expect(screen.queryByRole('button', { name: /close details/i })).not.toBeInTheDocument();
+  });
 
-//     expect(apiSpy).toHaveBeenCalledTimes(1);
-//     apiSpy.mockRestore();
-//   });
+  // --- НОВЫЕ ТЕСТЫ ДЛЯ ПОДНЯТИЯ COVERAGE ---
 
-//   it('отображает ErrorBoundary при нажатии на BuggyButton и меняет состояние App', () => {
-//     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  it('выполняет поиск и фильтрует список при отправке формы', async () => {
+    const fakeCache = [
+      { name: 'bulbasaur', url: 'https://pokeapi.co/api/v2/pokemon/1/' },
+      { name: 'pikachu', url: 'https://pokeapi.co/api/v2/pokemon/25/' }
+    ];
+    localStorage.setItem('all_pokemon_names', JSON.stringify(fakeCache));
 
-//     render(<App />);
-//     const bugBtn = screen.getByText(/Trigger Error/i);
-//     fireEvent.click(bugBtn);
+    render(
+      <MemoryRouter initialEntries={['/search/all/page/1']}>
+        <App />
+      </MemoryRouter>
+    );
 
-//     expect(screen.getByText(/Critical Application Error/i)).toBeInTheDocument();
+    const input = screen.getByPlaceholderText(/Например: pikachu.../i);
+    const searchBtn = screen.getByRole('button', { name: /search/i });
 
-//     errorSpy.mockRestore();
-//   });
+    // Вводим "pika" и отправляем форму
+    fireEvent.change(input, { target: { value: 'pika' } });
+    fireEvent.click(searchBtn);
 
-// });
+    // Должен остаться только pikachu, а bulbasaur исчезнуть
+    await waitFor(() => {
+      expect(screen.getByText(/pikachu/i)).toBeInTheDocument();
+      expect(screen.queryByText(/bulbasaur/i)).not.toBeInTheDocument();
+    });
+  });
+
+  it('успешно переключает страницы пагинации через кнопки Next и Previous', async () => {
+    // Создаем массив из 12 элементов, чтобы появилось 2 страницы (по 10 на страницу)
+    const fakeCache = Array.from({ length: 12 }, (_, i) => ({
+      name: `pokemon-${i + 1}`,
+      url: `https://pokeapi.co/api/v2/pokemon/${i + 1}/`
+    }));
+    localStorage.setItem('all_pokemon_names', JSON.stringify(fakeCache));
+
+    render(
+      <MemoryRouter initialEntries={['/search/all/page/1']}>
+        <App />
+      </MemoryRouter>
+    );
+
+    // Ищем строгое совпадение строки "pokemon-1", игнорируя "pokemon-10"
+    await screen.findByText('pokemon-1', { exact: true });
+
+    const nextBtn = screen.getByRole('button', { name: /next/i });
+    fireEvent.click(nextBtn);
+
+    // Должен появиться покемон со 2-й страницы
+    await screen.findByText('pokemon-11', { exact: true });
+    expect(screen.queryByText('pokemon-1', { exact: true })).not.toBeInTheDocument();
+
+    // Возвращаемся обратно
+    const prevBtn = screen.getByRole('button', { name: /previous/i });
+    fireEvent.click(prevBtn);
+
+    await screen.findByText('pokemon-1', { exact: true });
+  });
+
+  it('отображает ошибку, если API возвращает некорректные данные или 404', async () => {
+    // Передаем несуществующий поисковый запрос, на который MSW вернет ошибку
+    render(
+      <MemoryRouter initialEntries={['/search/not-found-pokemon/page/1']}>
+        <App />
+      </MemoryRouter>
+    );
+
+    const errorMsg = await screen.findByText(/Nothing found matching your request/i);
+    expect(errorMsg).toBeInTheDocument();
+  });
+});
