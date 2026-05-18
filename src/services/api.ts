@@ -11,15 +11,13 @@ export interface Pokemon {
 export class PokemonApi {
   private static BASE_URL = 'https://pokeapi.co/api/v2/pokemon';
 
-  // 1. Загрузка абсолютно всех имён для кэширования в localStorage
   static async fetchAllPokemonNames(): Promise<{ name: string; url: string }[]> {
-    const response = await fetch(`${this.BASE_URL}?limit=1350`); // 1025 id
+    const response = await fetch(`${this.BASE_URL}?limit=1350`);
     if (!response.ok) throw new Error('Failed to fetch all names');
     const data = await response.json();
     return data.results; // Массив объектов { name, url }
   }
 
-  // 2. Загрузка детальной информации для списка покемонов (с картинками)
   static async getPokemonsDetailsList(shortList: { name: string; url: string }[]): Promise<Pokemon[]> {
     return Promise.all(
       shortList.map(async (p) => {
@@ -40,7 +38,6 @@ export class PokemonApi {
     );
   }
 
-  // 3. Получение одного конкретного покемона для Аутлета
   static async getPokemonByNameOrId(searchTerm: string | number): Promise<Pokemon> {
     const term = String(searchTerm).toLowerCase().trim();
     const response = await fetch(`${this.BASE_URL}/${term}`);

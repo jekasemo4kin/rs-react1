@@ -61,8 +61,6 @@ describe('App Integration with Routing', () => {
     expect(screen.queryByRole('button', { name: /close details/i })).not.toBeInTheDocument();
   });
 
-  // --- НОВЫЕ ТЕСТЫ ДЛЯ ПОДНЯТИЯ COVERAGE ---
-
   it('выполняет поиск и фильтрует список при отправке формы', async () => {
     const fakeCache = [
       { name: 'bulbasaur', url: 'https://pokeapi.co/api/v2/pokemon/1/' },
