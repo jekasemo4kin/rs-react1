@@ -3,21 +3,25 @@ import { useParams, useNavigate, Outlet } from 'react-router-dom';
 import { SearchBar } from '../components/SearchBar';
 import { ResultsList } from '../components/ResultsList';
 import { PokemonApi } from '../services/api';
+import { useLocalStorage } from '../hooks/useLocalStorage';
+import {NotFoundPage} from './NotFoundPage';
 import type { Pokemon } from '../services/api';
 
-// interface Props {
-//   onErrorTrigger: (status: boolean) => void;
-// }
+interface CacheItem {
+  name: string;
+  url: string;
+}
 
-//export function MainPage({ onErrorTrigger }: Props) {
 export function MainPage() {
   const { query, page, id } = useParams<{ query: string; page: string; id?: string }>();
   const navigate = useNavigate();
 
   const [pokemons, setPokemons] = useState<Pokemon[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isError, setIsError] = useState(false);
-  const [totalFilteredCount, setTotalFilteredCount] = useState(0);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isError, setIsError] = useState<boolean>(false);
+  const [totalFilteredCount, setTotalFilteredCount] = useState<number>(0);
+
+  const [cachedNames, setCachedNames] = useLocalStorage<CacheItem[]>('all_pokemon_names', []);
 
   const currentPage = Number(page) || 1;
   const currentQuery = query || 'all';
@@ -25,62 +29,68 @@ export function MainPage() {
 
   useEffect(() => {
     const initCache = async () => {
-      if (!localStorage.getItem('all_pokemon_names')) {
+      if (cachedNames.length === 0) {
         try {
           const allPokemons = await PokemonApi.fetchAllPokemonNames();
-          localStorage.setItem('all_pokemon_names', JSON.stringify(allPokemons));
+          setCachedNames(allPokemons);
         } catch (e) {
           console.error('Failed to cache pokemon names', e);
         }
       }
     };
     initCache();
-  }, []);
+  }, [cachedNames, setCachedNames]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      setIsError(false);
-      try {
-        let filteredList: { name: string; url: string }[] = [];
-        const cachedData = localStorage.getItem('all_pokemon_names');
+  const fetchData = async () => {
+    setIsLoading(true);
+    setIsError(false);
+    try {
+      let filteredList: CacheItem[] = [];
 
-        if (cachedData) {
-          const allNames: { name: string; url: string }[] = JSON.parse(cachedData);
-          
-          if (currentQuery === 'all') {
-            filteredList = allNames;
-          } else {
-            filteredList = allNames.filter(p => 
-              p.name.toLowerCase().includes(currentQuery.toLowerCase().trim())
-            );
-          }
+      if (cachedNames.length > 0) {
+        if (currentQuery === 'all') {
+          filteredList = cachedNames;
+        } else {
+          filteredList = cachedNames.filter((p) =>
+            p.name.toLowerCase().includes(currentQuery.toLowerCase().trim())
+          );
         }
-
-        setTotalFilteredCount(filteredList.length);
-
-        if (filteredList.length === 0) {
-          setPokemons([]);
-          setIsError(true);
-          return;
-        }
-
-        const offset = (currentPage - 1) * limitPerPage;
-        const pageChunk = filteredList.slice(offset, offset + limitPerPage);
-
-        const detailsData = await PokemonApi.getPokemonsDetailsList(pageChunk);
-        setPokemons(detailsData);
-      } catch (e) {
-        console.error(e);
-        setIsError(true);
-        setPokemons([]);
-      } finally {
-        setIsLoading(false);
       }
-    };
 
-    fetchData();
-  }, [currentQuery, currentPage]);
+      setTotalFilteredCount(filteredList.length);
+
+      if (filteredList.length === 0) {
+        setPokemons([]);
+        setIsLoading(false);
+        return;
+      }
+
+      const maxPages = Math.ceil(filteredList.length / limitPerPage);
+
+      if (currentPage > maxPages || currentPage < 1) {
+        setPokemons([]);
+        setIsLoading(false);
+        setIsError(true); 
+        return;
+      }
+
+      const offset = (currentPage - 1) * limitPerPage;
+      const pageChunk = filteredList.slice(offset, offset + limitPerPage);
+
+      const detailsData = await PokemonApi.getPokemonsDetailsList(pageChunk);
+      setPokemons(detailsData);
+    } catch (e) {
+      console.error(e);
+      setIsError(true);
+      setPokemons([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  fetchData();
+}, [currentQuery, currentPage, cachedNames]);
 
   const handleSearchSubmit = (term: string) => {
     const nextQuery = term === '' ? 'all' : term;
@@ -94,7 +104,7 @@ export function MainPage() {
   const handlePageChange = (direction: number) => {
     const nextPage = currentPage + direction;
     if (nextPage < 1) return;
-    
+
     if (id) {
       navigate(`/search/${currentQuery}/page/${nextPage}/pokemon/${id}`);
     } else {
@@ -105,22 +115,25 @@ export function MainPage() {
   const hasMore = currentPage * limitPerPage < totalFilteredCount;
   const showPagination = !isLoading && !isError && totalFilteredCount > limitPerPage;
 
+  const maxPages = Math.ceil(totalFilteredCount / limitPerPage);
+  const isInvalidPage = totalFilteredCount > 0 && (currentPage > maxPages || currentPage < 1 || isNaN(Number(page)));
+
+if (isInvalidPage && !isLoading) {
+  return <NotFoundPage />;
+}
+
   return (
     <div className="max-w-7xl mx-auto">
       <header className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 mb-8 text-center">
         <h1 className="text-3xl font-extrabold text-slate-800 mb-6">PokeAPI Explorer</h1>
-        <SearchBar 
-          onSearch={handleSearchSubmit} 
-          initialValue={currentQuery === 'all' ? '' : currentQuery} 
+        <SearchBar
+          onSearch={handleSearchSubmit}
+          initialValue={currentQuery === 'all' ? '' : currentQuery}
         />
       </header>
 
       <div className={`grid gap-8 ${id ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
-        
-        {/* Левая панель */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative min-h-100 flex flex-col">
-          
-          {/* Блок пагинации СВЕРХУ левой панели */}
           {showPagination && (
             <div className="border-b border-slate-100 px-8 py-4 flex justify-between items-center bg-slate-50/50">
               <button
@@ -153,7 +166,6 @@ export function MainPage() {
           </div>
         </div>
 
-        {/* Правая панель (Outlet) */}
         {id && (
           <div className="w-full">
             <Outlet />

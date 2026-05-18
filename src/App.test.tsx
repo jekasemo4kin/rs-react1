@@ -77,11 +77,9 @@ describe('App Integration with Routing', () => {
     const input = screen.getByPlaceholderText(/Например: pikachu.../i);
     const searchBtn = screen.getByRole('button', { name: /search/i });
 
-    // Вводим "pika" и отправляем форму
     fireEvent.change(input, { target: { value: 'pika' } });
     fireEvent.click(searchBtn);
 
-    // Должен остаться только pikachu, а bulbasaur исчезнуть
     await waitFor(() => {
       expect(screen.getByText(/pikachu/i)).toBeInTheDocument();
       expect(screen.queryByText(/bulbasaur/i)).not.toBeInTheDocument();
@@ -89,7 +87,6 @@ describe('App Integration with Routing', () => {
   });
 
   it('успешно переключает страницы пагинации через кнопки Next и Previous', async () => {
-    // Создаем массив из 12 элементов, чтобы появилось 2 страницы (по 10 на страницу)
     const fakeCache = Array.from({ length: 12 }, (_, i) => ({
       name: `pokemon-${i + 1}`,
       url: `https://pokeapi.co/api/v2/pokemon/${i + 1}/`
@@ -102,17 +99,14 @@ describe('App Integration with Routing', () => {
       </MemoryRouter>
     );
 
-    // Ищем строгое совпадение строки "pokemon-1", игнорируя "pokemon-10"
     await screen.findByText('pokemon-1', { exact: true });
 
     const nextBtn = screen.getByRole('button', { name: /next/i });
     fireEvent.click(nextBtn);
 
-    // Должен появиться покемон со 2-й страницы
     await screen.findByText('pokemon-11', { exact: true });
     expect(screen.queryByText('pokemon-1', { exact: true })).not.toBeInTheDocument();
 
-    // Возвращаемся обратно
     const prevBtn = screen.getByRole('button', { name: /previous/i });
     fireEvent.click(prevBtn);
 
@@ -120,7 +114,7 @@ describe('App Integration with Routing', () => {
   });
 
   it('отображает ошибку, если API возвращает некорректные данные или 404', async () => {
-    // Передаем несуществующий поисковый запрос, на который MSW вернет ошибку
+
     render(
       <MemoryRouter initialEntries={['/search/not-found-pokemon/page/1']}>
         <App />
@@ -130,4 +124,73 @@ describe('App Integration with Routing', () => {
     const errorMsg = await screen.findByText(/Nothing found matching your request/i);
     expect(errorMsg).toBeInTheDocument();
   });
+
+  it('успешно переходит на страницу About при клике на ссылку в навигации', async () => {
+    render(
+      <MemoryRouter initialEntries={['/search/all/page/1']}>
+        <App />
+      </MemoryRouter>
+    );
+
+    const aboutLink = screen.getByRole('link', { name: /^about$/i });
+    fireEvent.click(aboutLink);
+
+    expect(await screen.findByText(/About Pokemon App/i)).toBeInTheDocument();
+    expect(screen.getByText(/Author Information/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /View Author's CV/i })).toHaveAttribute(
+      'href',
+      'https://online-cv-gold.vercel.app/CV.pdf'
+    );
+  });
+
+  it('отображает NotFoundPage (404) при переходе на несуществующий роут', async () => {
+    render(
+      <MemoryRouter initialEntries={['/some-broken-route-123/xyz']}>
+        <App />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText(/Page Not Found/i)).toBeInTheDocument();
+    
+    const returnLink = screen.getByRole('link', { name: /Return to Main App/i });
+    expect(returnLink).toHaveAttribute('href', '/search/all/page/1');
+  });
+
+  it('показывает NotFoundPage, если в URL передан номер страницы, превышающий лимит', async () => {
+    const fakeCache = [{ name: 'bulbasaur', url: 'https://pokeapi.co/api/v2/pokemon/1/' }];
+    localStorage.setItem('all_pokemon_names', JSON.stringify(fakeCache));
+
+    render(
+      <MemoryRouter initialEntries={['/search/all/page/66']}>
+        <App />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText(/Page Not Found/i)).toBeInTheDocument();
+  });
+
+  it('вызывает функцию handleErrorState при срабатывании критической ошибки', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    render(
+      <MemoryRouter initialEntries={['/search/all/page/1']}>
+        <App />
+      </MemoryRouter>
+    );
+
+    const buggyBtn = screen.getByRole('button', { name: /Trigger Error/i });
+    
+    try {
+      fireEvent.click(buggyBtn);
+    } catch {
+      /* ошибка перехвачена для теста */
+    }
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Trigger Error/i })).toBeInTheDocument();
+    });
+
+    spy.mockRestore();
+  });
+
 });

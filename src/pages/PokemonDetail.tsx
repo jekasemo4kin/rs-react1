@@ -31,7 +31,6 @@ export function PokemonDetail() {
   }, [id]);
 
   const handleClose = () => {
-    // Возвращаем пользователя на список, сохраняя поисковый запрос и страницу
     navigate(`/search/${query}/page/${page}`);
   };
 
@@ -53,7 +52,6 @@ export function PokemonDetail() {
 
   return (
     <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 relative h-fit sticky top-4 animate-fadeIn">
-      {/* Кнопка закрытия (Крестик) */}
       <button 
         onClick={handleClose}
         className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-200 transition-colors"
