@@ -6,6 +6,7 @@ import { NotFoundPage } from './pages/NotFoundPage';
 import { AboutPage } from './pages/AboutPage';
 import './App.css';
 import { useTheme } from './hooks/useTheme';
+import { Flyout } from './components/Flyout';
 
 export const App = () => {
 
@@ -57,6 +58,7 @@ export const App = () => {
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
 
+        <Flyout />
         <BuggyButton />
       
     </div>

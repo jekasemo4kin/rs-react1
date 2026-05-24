@@ -1,29 +1,41 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
-interface PokemonState {
-  selectedIds: string[];
+export interface SelectedPokemon {
+  id: string;
+  name: string;
 }
 
-const loadInitialState = (): string[] => {
+interface PokemonState {
+  selectedItems: SelectedPokemon[];
+}
+
+const loadInitialState = (): SelectedPokemon[] => {
   const saved = localStorage.getItem('selected_pokemons');
   return saved ? JSON.parse(saved) : [];
 };
 
 const pokemonSlice = createSlice({
   name: 'pokemon',
-  initialState: { selectedIds: loadInitialState() } as PokemonState,
+  initialState: { selectedItems: loadInitialState() } as PokemonState,
   reducers: {
-    toggleSelect: (state, action: PayloadAction<string>) => {
-      const id = action.payload;
-      if (state.selectedIds.includes(id)) {
-        state.selectedIds = state.selectedIds.filter(i => i !== id);
+    toggleSelect: (state, action: PayloadAction<SelectedPokemon>) => {
+      const { id, name } = action.payload;
+      const index = state.selectedItems.findIndex(item => item.id === id);
+        
+      if (index !== -1) {
+          state.selectedItems.splice(index, 1);
       } else {
-        state.selectedIds.push(id);
+          state.selectedItems.push({ id, name });
       }
-      localStorage.setItem('selected_pokemons', JSON.stringify(state.selectedIds));
+      localStorage.setItem('selected_pokemons', JSON.stringify(state.selectedItems));
+    },
+    
+    clearSelection: (state) => {
+      state.selectedItems = [];
+      localStorage.setItem('selected_pokemons', JSON.stringify([]));
     }
   }
 });
 
-export const { toggleSelect } = pokemonSlice.actions;
+export const { toggleSelect, clearSelection } = pokemonSlice.actions;
 export default pokemonSlice.reducer;

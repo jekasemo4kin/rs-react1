@@ -13,7 +13,7 @@ interface Props {
 export function ResultsList({ pokemons, isLoading, isError, onItemClick }: Props) {
 
   const dispatch = useDispatch();
-  const selectedIds = useSelector((state: RootState) => state.pokemon.selectedIds);
+  const selectedItems = useSelector((state: RootState) => state.pokemon.selectedItems);
 
   if (isLoading) {
     return (
@@ -46,7 +46,7 @@ export function ResultsList({ pokemons, isLoading, isError, onItemClick }: Props
       <tbody className="divide-y divide-slate-50">
         {pokemons.map((pokemon) => {
           const id = String(pokemon.id || '');
-          const isSelected = selectedIds.includes(id);
+          const isSelected = selectedItems.some(item => item.id === id);
 
           return (
             <tr key={pokemon.name} className="hover:bg-blue-50/50 transition-colors">
@@ -54,7 +54,7 @@ export function ResultsList({ pokemons, isLoading, isError, onItemClick }: Props
                 <input
                   type="checkbox"
                   checked={isSelected}
-                  onChange={() => dispatch(toggleSelect(id))}
+                  onChange={() => dispatch(toggleSelect({ id, name: pokemon.name }))}
                   className="w-5 h-5 cursor-pointer accent-blue-600"
                 />
               </td>
