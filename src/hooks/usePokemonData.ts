@@ -1,33 +1,24 @@
 import { useState, useEffect } from 'react';
 import { PokemonApi, type Pokemon } from '../services/api';
 import { useLocalStorage } from './useLocalStorage';
-
-interface CacheItem {
-  name: string;
-  url: string;
-}
+import { APP_CONFIG } from '../constants/config';
 
 export const usePokemonData = (query: string, page: number) => {
   const [pokemons, setPokemons] = useState<Pokemon[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isError, setIsError] = useState<boolean>(false);
   const [totalFilteredCount, setTotalFilteredCount] = useState<number>(0);
-  const [cachedNames, setCachedNames] = useLocalStorage<CacheItem[]>('all_pokemon_names', []);
-
-  const limitPerPage = 10;
+  const [cachedNames] = useLocalStorage<{name: string, url: string}[]>('all_pokemon_names', []);
 
   useEffect(() => {
-    if (cachedNames.length === 0) {
-      PokemonApi.fetchAllPokemonNames()
-        .then(setCachedNames)
-        .catch(console.error);
-    }
-  }, [cachedNames.length, setCachedNames]);
-
-  useEffect(() => {
+    const controller = new AbortController();
+    
     const fetchData = async () => {
+      if (cachedNames.length === 0) return;
+      
       setIsLoading(true);
       setIsError(false);
+      
       try {
         const filteredList = query === 'all' 
           ? cachedNames 
@@ -35,27 +26,30 @@ export const usePokemonData = (query: string, page: number) => {
 
         setTotalFilteredCount(filteredList.length);
 
-        const maxPages = Math.ceil(filteredList.length / limitPerPage) || 1;
-        if (page > maxPages || page < 1) {
-          throw new Error('Invalid page');
-        }
-
-        const offset = (page - 1) * limitPerPage;
-        const pageChunk = filteredList.slice(offset, offset + limitPerPage);
+        const offset = (page - 1) * APP_CONFIG.ITEMS_PER_PAGE;
+        const pageChunk = filteredList.slice(offset, offset + APP_CONFIG.ITEMS_PER_PAGE);
+        
         const detailsData = await PokemonApi.getPokemonsDetailsList(pageChunk);
         
-        setPokemons(detailsData);
+        if (!controller.signal.aborted) {
+          setPokemons(detailsData);
+        }
       } catch (e) {
-        setIsError(true);
-        setPokemons([]);
-        console.error(e);
+        if (!controller.signal.aborted) {
+          setIsError(true);
+          setPokemons([]);
+          console.error(e);
+        }
       } finally {
-        setIsLoading(false);
+        if (!controller.signal.aborted) {
+          setIsLoading(false);
+        }
       }
     };
 
-    if (cachedNames.length > 0) fetchData();
+    fetchData();
+    return () => controller.abort();
   }, [query, page, cachedNames]);
 
-  return { pokemons, isLoading, isError, totalFilteredCount, limitPerPage };
+  return { pokemons, isLoading, isError, totalFilteredCount };
 };

@@ -3,26 +3,30 @@ import { SearchBar } from '../components/SearchBar';
 import { ResultsList } from '../components/ResultsList';
 import { usePokemonData } from '../hooks/usePokemonData';
 import {NotFoundPage} from './NotFoundPage';
+import { getPaginationData } from '../utils/pagination';
+import { APP_CONFIG } from '../constants/config';
 
 export function MainPage() {
   const { query = 'all', page = '1', id } = useParams<{ query: string; page: string; id?: string }>();
   const navigate = useNavigate();
-  
   const currentPage = Number(page) || 1;
-  const { pokemons, isLoading, isError, totalFilteredCount, limitPerPage } = usePokemonData(query, currentPage);
-
-  const hasMore = currentPage * limitPerPage < totalFilteredCount;
-  const maxPages = Math.ceil(totalFilteredCount / limitPerPage) || 1;
-  const isInvalidPage = totalFilteredCount > 0 && (currentPage > maxPages || currentPage < 1);
+  const { pokemons, isLoading, isError, totalFilteredCount } = usePokemonData(query, currentPage);
+  const { hasMore, isInvalidPage } = getPaginationData(totalFilteredCount, currentPage);
 
   if (isInvalidPage && !isLoading) return <NotFoundPage />;
 
-  const handleSearchSubmit = (term: string) => navigate(`/search/${term || 'all'}/page/1`);
-  
+  const handleSearchSubmit = (term: string) => {
+    const queryParam = term.trim() === '' ? 'all' : term.trim();
+    navigate(`/search/${queryParam}/page/1`);
+  };
+
   const handlePageChange = (direction: number) => {
     const nextPage = currentPage + direction;
-    const path = id ? `/search/${query}/page/${nextPage}/pokemon/${id}` : `/search/${query}/page/${nextPage}`;
-    navigate(path);
+    if (id) {
+      navigate(`/search/${query}/page/${nextPage}/pokemon/${id}`);
+    } else {
+      navigate(`/search/${query}/page/${nextPage}`);
+    }
   };
 
   return (
@@ -34,7 +38,7 @@ export function MainPage() {
 
       <div className={`grid gap-8 ${id ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
-          {!isLoading && !isError && totalFilteredCount > limitPerPage && (
+          {!isLoading && !isError && totalFilteredCount > APP_CONFIG.ITEMS_PER_PAGE && (
             <div className="border-b border-slate-100 px-8 py-4 flex justify-between items-center bg-slate-50/50">
               <button
                 onClick={() => handlePageChange(-1)}
