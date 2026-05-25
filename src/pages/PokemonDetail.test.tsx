@@ -21,7 +21,6 @@ afterEach(() => {
 
 describe('PokemonDetail', () => {
   it('отображает данные покемона после успешной загрузки', async () => {
-    // Явно типизируем мок-объект типом Pokemon
     const mockPokemon: Pokemon = {
       name: 'pikachu',
       id: 25,
@@ -34,7 +33,6 @@ describe('PokemonDetail', () => {
     
     vi.mocked(PokemonApi.getPokemonByNameOrId).mockResolvedValue(mockPokemon);
 
-    // Оборачиваем в Routes, чтобы useParams точно получил id='25'
     renderWithProviders(
       <Routes>
         <Route path="/search/:query/page/:page/pokemon/:id" element={<PokemonDetail />} />

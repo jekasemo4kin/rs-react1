@@ -31,4 +31,20 @@ describe('PokemonApi', () => {
     const res = await PokemonApi.getPokemonByNameOrId('25');
     expect(res.name).toBe('pikachu');
   });
+
+  it('getPokemonByNameOrId: корректно обрабатывает отсутствие изображения', async () => {
+    const mockData = {
+      name: 'bulbasaur', id: 1, height: 7, weight: 69,
+      sprites: { front_default: null },
+      types: []
+    };
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => mockData
+    } as Response);
+
+    const res = await PokemonApi.getPokemonByNameOrId('1');
+    expect(res.imageUrl).toBeUndefined();
+  });
+
 });
