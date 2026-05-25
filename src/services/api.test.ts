@@ -1,14 +1,34 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { PokemonApi } from './api';
 
 describe('PokemonApi', () => {
-  it('должен успешно получать список покемонов', async () => {
-    const results = await PokemonApi.fetchAllPokemonNames();
-    expect(results).toHaveLength(1);
-    expect(results[0].name).toBe('bulbasaur');
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn());
   });
 
-  it('должен выбрасывать ошибку при ненайденном покемоне', async () => {
-    await expect(PokemonApi.getPokemonByNameOrId('not-found-pokemon')).rejects.toThrow('Pokemon not found');
+  it('fetchAllPokemonNames: выбрасывает ошибку при !response.ok', async () => {
+    vi.mocked(fetch).mockResolvedValue({ ok: false } as Response);
+    await expect(PokemonApi.fetchAllPokemonNames()).rejects.toThrow('Failed to fetch all names');
+  });
+
+  it('getPokemonsDetailsList: возвращает базовые данные при ошибке одного из запросов', async () => {
+    vi.mocked(fetch).mockResolvedValue({ ok: false } as Response);
+    const result = await PokemonApi.getPokemonsDetailsList([{ name: 'pika', url: '...' }]);
+    expect(result[0]).toEqual({ name: 'pika', url: '...' });
+  });
+
+  it('getPokemonByNameOrId: возвращает данные при успехе', async () => {
+    const mockData = {
+      name: 'pikachu', id: 25, height: 4, weight: 60,
+      sprites: { front_default: 'url' },
+      types: [{ type: { name: 'electric' } }]
+    };
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => mockData
+    } as Response);
+
+    const res = await PokemonApi.getPokemonByNameOrId('25');
+    expect(res.name).toBe('pikachu');
   });
 });

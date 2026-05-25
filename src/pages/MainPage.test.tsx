@@ -1,18 +1,20 @@
 import { screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
-import {  Routes, Route } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { MainPage } from './MainPage';
 import { renderWithProviders } from '../__tests__/test-utils';
 import * as usePokemonData from '../hooks/usePokemonData';
 
 describe('MainPage', () => {
+  type HookReturnType = ReturnType<typeof usePokemonData.usePokemonData>;
+
   it('рендерит заголовок и компоненты при загрузке', () => {
     vi.spyOn(usePokemonData, 'usePokemonData').mockReturnValue({
       pokemons: [],
       isLoading: false,
       isError: false,
       totalFilteredCount: 0
-    } as ReturnType<typeof usePokemonData.usePokemonData>);
+    } satisfies HookReturnType);
 
     renderWithProviders(<MainPage />);
     expect(screen.getByText(/PokeAPI Explorer/i)).toBeInTheDocument();
@@ -24,7 +26,7 @@ describe('MainPage', () => {
       isLoading: false,
       isError: false,
       totalFilteredCount: 25
-    } as ReturnType<typeof usePokemonData.usePokemonData>);
+    } satisfies HookReturnType);
 
     renderWithProviders(<MainPage />);
     expect(screen.getByText(/Page 1/i)).toBeInTheDocument();
@@ -37,7 +39,7 @@ describe('MainPage', () => {
       isLoading: false,
       isError: false,
       totalFilteredCount: 10
-    } as ReturnType<typeof usePokemonData.usePokemonData>);
+    } satisfies HookReturnType);
 
     renderWithProviders(
       <Routes>
