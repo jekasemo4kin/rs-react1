@@ -8,14 +8,20 @@ export const usePokemonData = (query: string, page: number) => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isError, setIsError] = useState<boolean>(false);
   const [totalFilteredCount, setTotalFilteredCount] = useState<number>(0);
-  const [cachedNames] = useLocalStorage<{name: string, url: string}[]>('all_pokemon_names', []);
+  const [cachedNames, setCachedNames] = useLocalStorage<{name: string, url: string}[]>('all_pokemon_names', []);
 
   useEffect(() => {
+    if (cachedNames.length === 0) {
+      PokemonApi.fetchAllPokemonNames().then(setCachedNames).catch(console.error);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (cachedNames.length === 0) return;
+
     const controller = new AbortController();
     
-    const fetchData = async () => {
-      if (cachedNames.length === 0) return;
-      
+    const fetchDetails = async () => {
       setIsLoading(true);
       setIsError(false);
       
@@ -35,21 +41,16 @@ export const usePokemonData = (query: string, page: number) => {
           setPokemons(detailsData);
         }
       } catch (e) {
-        if (!controller.signal.aborted) {
-          setIsError(true);
-          setPokemons([]);
-          console.error(e);
-        }
+        console.error(e);
+        if (!controller.signal.aborted) setIsError(true);
       } finally {
-        if (!controller.signal.aborted) {
-          setIsLoading(false);
-        }
+        if (!controller.signal.aborted) setIsLoading(false);
       }
     };
 
-    fetchData();
+    fetchDetails();
     return () => controller.abort();
-  }, [query, page, cachedNames]);
+  }, [query, page, cachedNames]); 
 
   return { pokemons, isLoading, isError, totalFilteredCount };
 };
